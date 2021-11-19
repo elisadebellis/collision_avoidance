@@ -11,12 +11,29 @@ modulo forza risultante: 1/norm(t, p_i)
 
 \sum_i fi + cmd_vel*/
 
+float linear_speed;
 
-/// Initialize linear velocity with 0.2m/s
+float angular_speed;
+
+void setVelocity() {
+
+  
+    std::cout << "Inserisci un comando di velocità: \nlinear_speed = " ;
+      
+    std::cin >> linear_speed;
+
+    
+    std::cout << "angular_speed = ";
+    std::cin >> angular_speed;
+    
+
+}
+
+/// Inizializzo la velocita a 0.2m/s
 const float linearVelocity = 0.2;
-/// Initialize angular velocity with 30degrees/s
+/// Inizializzo la velocita angolare with 30degrees/s
 const float anguarVelocity = 0.52;
-/// Initalize safe distance as 1.2m
+/// Imposto il valore di threshold a 0.2
 const float distanceThreshold = 0.2;
 /// Initialize publishing rate
 const int rate = 2;
@@ -111,24 +128,39 @@ int main (int argc, char **argv ) {
 
     ROS_INFO_STREAM("Setting up the robot config for obstacle avoidance...");
     /// Initialize previous with the current value of velocities
-    prevLinearVelocity = linearVelocity;
-    prevAnguarVelocity = anguarVelocity;
-    /// Initialize obstacle detected value with false
-    obstacleDetected = false;
-    /// Publish the velocities to the robot on the navigation topic
-    ros::Publisher publishVelocity;
-	/// Define a subscriber object with topic name and buffer size of messages
-	/// Make sure you have subscribed to the correct topic
-	  ros::Subscriber subscibeSensor;
+
+    bool setupVelocity = false;
+    while (!setupVelocity) {
+      setVelocity();
+
+      if (linear_speed !=0 || angular_speed!=0) {
     
-    publishVelocity = n.advertise<geometry_msgs::Twist>\
-                ("/cmd_vel", 1000);
-    /// Subscribe for data from the laser sensor on the scan topic
-    subscibeSensor = n.subscribe<sensor_msgs::LaserScan>("/base_scan", 500, sensorCallback);
+        ROS_INFO("linear_speed: [%f]", linear_speed);
+        ROS_INFO("angular_speed: [%f]", angular_speed);
+        setupVelocity = true;
+      }
+    }
     
-    ROS_INFO_STREAM("Set up complete");
-    //ros::Publisher pub = n.advertise<geometry_msgs::Twist>("/cmd_vel",1000);
-    //ros::Subscriber sub_laser= n.subscribe("scan",1000, scanCallback);
+
+      prevLinearVelocity = linearVelocity;
+      prevAnguarVelocity = anguarVelocity;
+      /// Initialize obstacle detected value with false
+      obstacleDetected = false;
+      /// Publish the velocities to the robot on the navigation topic
+      ros::Publisher publishVelocity;
+    /// Define a subscriber object with topic name and buffer size of messages
+    /// Make sure you have subscribed to the correct topic
+      ros::Subscriber subscibeSensor;
+      
+      publishVelocity = n.advertise<geometry_msgs::Twist>\
+                  ("/cmd_vel", 1000);
+      /// Subscribe for data from the laser sensor on the scan topic
+      subscibeSensor = n.subscribe<sensor_msgs::LaserScan>("/base_scan", 500, sensorCallback);
+      
+      ROS_INFO_STREAM("Set up complete");
+      //ros::Publisher pub = n.advertise<geometry_msgs::Twist>("/cmd_vel",1000);
+      //ros::Subscriber sub_laser= n.subscribe("scan",1000, scanCallback);
+    
 
     ros::Rate loop_rate(2);
    while (ros::ok()) { 
