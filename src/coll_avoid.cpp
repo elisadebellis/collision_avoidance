@@ -2,14 +2,7 @@
 #include "sensor_msgs/LaserScan.h"
 #include "geometry_msgs/Twist.h"
 
-/// Initialize linear velocity with 0.2m/s
-const float linearVelocity = 0.2;
-/// Initialize angular velocity with 30degrees/s
-const float anguarVelocity = 0.52;
-/// Initalize safe distance as 1.2m
-const float distanceThreshold = 1.2;
-/// Initialize publishing rate
-const int rate = 2;
+
 /* p_i(x,y) = posa ostacolo
 t (x,y) = posa robot
 
@@ -19,20 +12,23 @@ modulo forza risultante: 1/norm(t, p_i)
 \sum_i fi + cmd_vel*/
 
 
-// 1. Trasformo il laser in un punto 
-
-
-
-/*void CmdCallBack(const simple_sim::Cmd& cmd_msg){
-    ROS_INFO("command linear velocity: [%f]", cmd_msg.linear_speed);
-    ROS_INFO("command angular velocity: [%f]", cmd_msg.angular_speed);
-
-    v = cmd_msg.linear_speed;
-    omega = cmd_msg.angular_speed;
-}
+/// Initialize linear velocity with 0.2m/s
+const float linearVelocity = 0.2;
+/// Initialize angular velocity with 30degrees/s
+const float anguarVelocity = 0.52;
+/// Initalize safe distance as 1.2m
+const float distanceThreshold = 0.2;
+/// Initialize publishing rate
+const int rate = 2;
+/// Define variable to store if obstacle was detected
+bool obstacleDetected;
+/// Define variables to store previous velocities
+float prevLinearVelocity, prevAnguarVelocity;
+/// Define twist object to publish velocities
+geometry_msgs::Twist velocities;
 
 //Update position
-void update_position( simple_sim::Pose& pose_msg, const float& linear_speed, const float& angular_speed){
+/*void update_position(collision_avoidance::Pose& pose_msg, const float& linear_speed, const float& angular_speed){
 
     float dx;
     float dy;
@@ -59,6 +55,53 @@ void update_position( simple_sim::Pose& pose_msg, const float& linear_speed, con
 
 }*/
 
+bool getObstacleDetected() {
+    return obstacleDetected;
+  }
+
+
+bool checkObstacle() {
+  /// Check if obstacle is ahead
+  if (getObstacleDetected()) {
+    ROS_WARN_STREAM("Obstacle ahead!");
+    return true;
+  }
+
+  return false;
+}
+
+void setObstacleDetected(bool obstacle) {
+    obstacleDetected = obstacle;
+  }
+
+
+void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
+  /// Read sensor data to get obstacle distances with respect to the robot
+  for (const float &range : sensorData->ranges) {
+    if (range < distanceThreshold) {
+      setObstacleDetected(true);
+      
+      return;
+    }
+  }
+
+  setObstacleDetected(false);
+}
+
+bool checkVelocityChanged() {
+  /// Linear and angular change simultaneously
+  /// Check if both the velocities have changed
+  if (velocities.linear.x != prevLinearVelocity and \
+      velocities.angular.z != prevAnguarVelocity) {
+    ROS_DEBUG_STREAM("Velocity of the robot changed");
+    /// Update previous velocities
+    velocities.linear.x = prevLinearVelocity;
+    velocities.angular.z = prevAnguarVelocity;
+    return true;
+  }
+
+  return false;
+}
 
 int main (int argc, char **argv ) {
 
@@ -66,16 +109,46 @@ int main (int argc, char **argv ) {
    
     ros::NodeHandle n;
 
-
-  //ros::Publisher pub = n.advertise<geometry_msgs::Twist>("/cmd_vel",1000);
-  //ros::Subscriber sub_laser= n.subscribe("scan",1000, scanCallback);
-
-  ros::Rate loop_rate(10);
-
+    ROS_INFO_STREAM("Setting up the robot config for obstacle avoidance...");
+    /// Initialize previous with the current value of velocities
+    prevLinearVelocity = linearVelocity;
+    prevAnguarVelocity = anguarVelocity;
+    /// Initialize obstacle detected value with false
+    obstacleDetected = false;
+    /// Publish the velocities to the robot on the navigation topic
+    ros::Publisher publishVelocity;
+	/// Define a subscriber object with topic name and buffer size of messages
+	/// Make sure you have subscribed to the correct topic
+	  ros::Subscriber subscibeSensor;
     
+    publishVelocity = n.advertise<geometry_msgs::Twist>\
+                ("/cmd_vel", 1000);
+    /// Subscribe for data from the laser sensor on the scan topic
+    subscibeSensor = n.subscribe<sensor_msgs::LaserScan>("/base_scan", 500, sensorCallback);
+    
+    ROS_INFO_STREAM("Set up complete");
+    //ros::Publisher pub = n.advertise<geometry_msgs::Twist>("/cmd_vel",1000);
+    //ros::Subscriber sub_laser= n.subscribe("scan",1000, scanCallback);
 
+    ros::Rate loop_rate(2);
    while (ros::ok()) { 
-        
+       
+       if (checkObstacle()) {
+      /// Start turning the robot to avoid obstacles
+      velocities.linear.x = 0.0;
+      velocities.angular.z = anguarVelocity;
+      /// Check if velocities have changed
+      checkVelocityChanged();
+    } else {
+        /// Start moving the robot once obstacle is avoided
+        velocities.angular.z = 0.0;
+        velocities.linear.x = linearVelocity;
+        /// Check if velocities have changed
+        checkVelocityChanged();
+    }
+
+    /// Publish the velocities
+    publishVelocity.publish(velocities);
       ros::spinOnce();
 
       loop_rate.sleep();
