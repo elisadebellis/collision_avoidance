@@ -16,10 +16,42 @@ Output: cmd_vel che non va a sbattere
      preferibilmente "deflettendo" la traiettoria del robot verso uno
      spazio libero da collisioni.
 
-p_i (x,y): posa ostacolo
-t (x,y): posa robot
+----------------------------------------------------------------------------------------------------
 
-t - p_i: direzione forza risultante
-modulo forza risultante: 1/norm(t_i-p_i)
+Il programma prende in input dqa linea di comando due valori:
 
-\sum_i fi + cmd_vel
+///Velocità lineare
+float linear_speed;
+
+///Velocità angolare
+float angular_speed;
+
+Il laserscan tramite la funzione sensorCallback() rileva la distanza tra il robot e gli ostacoli settando la variabile booleana obstacle_detectected
+a true o false 
+
+void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
+ 
+  for (const float &range : sensorData->ranges) {
+    if (range < distanceThreshold) {
+      setObstacleDetected(true);
+      return;
+    }
+  }
+  setObstacleDetected(false);
+}
+
+Se l'ostacolo è stato rilevato, il robot si ferma e inizia a ruotare finchè nella sua traiettoria non sarà piu presente l'ostacolo:
+
+   if (checkObstacle()) {
+     /// Il robot si ferma e inizia a ruotare
+     velocities.linear.x = 0.0;
+     velocities.angular.z = angular_speed;
+   } 
+        
+ Altrimenti continua a muoversi con velocità lineare iniziale:
+ 
+   else {
+    ///Si muove se l'ostacolo è stato evitato
+    velocities.angular.z = 0.0;
+    velocities.linear.x = linear_speed;
+  }
