@@ -32,8 +32,9 @@ Il laserscan tramite la funzione sensorCallback() rileva la distanza tra il robo
 a true o false 
 
 void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
- 
+
   for (const float &range : sensorData->ranges) {
+  
     if (range < distanceThreshold) {
       setObstacleDetected(true);
       return;
