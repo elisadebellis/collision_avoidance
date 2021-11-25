@@ -40,6 +40,7 @@ void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
   setObstacleDetected(false);
 }
 
+
 Se l'ostacolo è stato rilevato, il robot si ferma e inizia a ruotare finchè nella sua traiettoria non sarà piu presente l'ostacolo:
 
    if (checkObstacle()) {
