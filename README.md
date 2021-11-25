@@ -31,31 +31,32 @@ Il programma prende in input dqa linea di comando due valori:
 Il laserscan tramite la funzione sensorCallback() rileva la distanza tra il robot e gli ostacoli settando la variabile booleana obstacle_detectected
 a true o false 
 
-void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
 
-  for (const float &range : sensorData->ranges) {
-  
-    if (range < distanceThreshold) {
-      setObstacleDetected(true);
-      return;
+     void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
+
+      for (const float &range : sensorData->ranges) {
+
+          if (range < distanceThreshold) {
+            setObstacleDetected(true);
+            return;
+          }
+        }
+        setObstacleDetected(false);
     }
-  }
-  setObstacleDetected(false);
-}
 
 
 Se l'ostacolo è stato rilevato, il robot si ferma e inizia a ruotare finchè nella sua traiettoria non sarà piu presente l'ostacolo:
 
-   if (checkObstacle()) {
-     /// Il robot si ferma e inizia a ruotare
-     velocities.linear.x = 0.0;
-     velocities.angular.z = angular_speed;
-   } 
+      if (checkObstacle()) {
+        /// Il robot si ferma e inizia a ruotare
+        velocities.linear.x = 0.0;
+        velocities.angular.z = angular_speed;
+      } 
         
  Altrimenti continua a muoversi con velocità lineare iniziale:
  
-   else {
-    ///Si muove se l'ostacolo è stato evitato
-    velocities.angular.z = 0.0;
-    velocities.linear.x = linear_speed;
-  }
+      else {
+       ///Si muove se l'ostacolo è stato evitato
+       velocities.angular.z = 0.0;
+       velocities.linear.x = linear_speed;
+     }
