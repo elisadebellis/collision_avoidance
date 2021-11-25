@@ -20,11 +20,13 @@ Output: cmd_vel che non va a sbattere
 
 Il programma prende in input dqa linea di comando due valori:
 
-///Velocità lineare
-float linear_speed;
+   ///Velocità lineare
 
-///Velocità angolare
-float angular_speed;
+   - float linear_speed;
+
+   ///Velocità angolare
+
+   - float angular_speed;
 
 Il laserscan tramite la funzione sensorCallback() rileva la distanza tra il robot e gli ostacoli settando la variabile booleana obstacle_detectected
 a true o false 
