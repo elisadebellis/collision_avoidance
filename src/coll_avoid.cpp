@@ -4,6 +4,9 @@
 #include "geometry_msgs/Pose.h"
 #include "collision_avoidance/Pose.h"
 #include <complex.h>
+#include <string.h>
+#include <iostream>
+
 
 using namespace std;
 
@@ -14,19 +17,41 @@ float linear_speed;
 ///Velocità angolare
 float angular_speed;
 //Distanza di threshold a 0.2
-const float distanceThreshold = 0.2;
+const float distanceThreshold = 0.5;
 //Variabile che identifica se l'ostacolo è stato rilevato
 bool obstacle_detected;
 //Per pubblicare e velocità
 geometry_msgs::Twist velocities;
+//Velocita limite
+#define MAX_SPEED 1.0
+
 
 
 //Prende in input da terminale il valore della velocità angolare e lineare
 void setVelocity() {
-  cout << "Inserisci un comando di velocità: \n linear_speed = " ;
-  cin >> linear_speed;
+
+  char* check_vel = (char*) malloc(sizeof(char)*20);
+
+  cout << "Inserisci un comando di velocità (0 < v < 1): \nlinear_speed = " ;
+  cin >> check_vel;
+
+  if (atof(check_vel) > MAX_SPEED ) {
+    linear_speed = MAX_SPEED;
+  }
+  else {
+    linear_speed = atof(check_vel);
+  }
+
   cout << "angular_speed = ";
-  cin >> angular_speed;
+  cin >> check_vel;
+
+  if (angular_speed > MAX_SPEED ) {
+    angular_speed = MAX_SPEED;
+  }
+  else {
+    angular_speed = atof(check_vel);
+  }
+ 
 }
 
 
@@ -64,7 +89,7 @@ int main (int argc, char **argv ) {
    
     ros::NodeHandle n;
 
-    ROS_INFO_STREAM("Setting up the robot configuration for collision avoidance...");
+    cout << "Setting up the robot configuration for collision avoidance..." << endl;
     
     
     bool setupVelocity = false;
@@ -72,15 +97,16 @@ int main (int argc, char **argv ) {
       
       setVelocity();
 
-      if (linear_speed !=0 || angular_speed!=0) {
-    
-        ROS_INFO("linear_speed: [%f]", linear_speed);
-        ROS_INFO("angular_speed: [%f]", angular_speed);
+      if (linear_speed > 0 && angular_speed > 0) {
+        
+        cout << "Velocita settate correttamente: " << endl;
+        cout << "linear_speed: " << linear_speed << endl;
+        cout << "angular_speed: " << angular_speed << endl;
         setupVelocity = true;
       }
 
       else {
-        ROS_INFO("La velocità deve essere diversa da zero: ");
+        cout << "\nLa velocita deve essere un numero maggiore zero: " << endl;
       }
     }
   
@@ -98,7 +124,7 @@ int main (int argc, char **argv ) {
       /// Subscribe - dati del laser dal topic /base_scan
       subscibeSensor = n.subscribe<sensor_msgs::LaserScan>("/base_scan", 500, sensorCallback);
       
-      ROS_INFO_STREAM("Set up complete");
+      cout << "Set up complete" << endl;
     
 
       ros::Rate loop_rate(2);
@@ -112,7 +138,7 @@ int main (int argc, char **argv ) {
         
         } 
         else {
-          ///Si muove se l'ostacolo è stato evitato
+          ///Si muove se l'ostacolo non è stato evitato
           velocities.angular.z = 0.0;
           velocities.linear.x = linear_speed;
           
