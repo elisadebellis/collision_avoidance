@@ -7,7 +7,6 @@
 #include <string.h>
 #include <iostream>
 
-
 using namespace std;
 
 /* --------VARIABILI GLOBALI---------*/
@@ -16,15 +15,14 @@ using namespace std;
 float linear_speed;
 ///Velocità angolare
 float angular_speed;
-//Distanza di threshold a 0.2
-const float distanceThreshold = 0.5;
+//Distanza di threshold a 0.3
+const float distanceThreshold = 0.4;
 //Variabile che identifica se l'ostacolo è stato rilevato
 bool obstacle_detected;
-//Per pubblicare e velocità
+//Per pubblicare le velocità
 geometry_msgs::Twist velocities;
 //Velocita limite
 #define MAX_SPEED 1.0
-
 
 
 //Prende in input da terminale il valore della velocità angolare e lineare
@@ -32,9 +30,10 @@ void setVelocity() {
 
   char* check_vel = (char*) malloc(sizeof(char)*20);
 
-  cout << "Inserisci un comando di velocità (0 < v < 1): \nlinear_speed = " ;
+  cout << "Enter a speed command (0 < v < 1): \nlinear_speed = " ;
   cin >> check_vel;
 
+  //atof restituisce il corrispondente valore in double 
   if (atof(check_vel) > MAX_SPEED ) {
     linear_speed = MAX_SPEED;
   }
@@ -73,12 +72,25 @@ void setObstacleDetected(bool obstacle) {
 
 /// Il LaserScan legge la distanza dall'ostacolo e la confronta con quella di threshold
 void sensorCallback(const sensor_msgs::LaserScan::ConstPtr& sensorData) {
-  ///# range data [m] (Note: values < range_min or > range_max should be discarded) 
+  ///# range data [m] (Note: values < range_min or > range_max should be discarded)
+  
+  float min_range = 0;
   for (const float &range : sensorData->ranges) {
-    if (range < distanceThreshold) {
-      setObstacleDetected(true);
-      return;
+    
+    if (range < distanceThreshold && range > min_range) {
+     
+      min_range = range;
+
     }
+  }
+
+  for (const float &range : sensorData->ranges) {
+    
+    if (range == min_range) {
+      setObstacleDetected(true);
+      
+      return;
+    } 
   }
   setObstacleDetected(false);
 }
@@ -99,14 +111,14 @@ int main (int argc, char **argv ) {
 
       if (linear_speed > 0 && angular_speed > 0) {
         
-        cout << "Velocita settate correttamente: " << endl;
+        cout << "Speed set correctly: " << endl;
         cout << "linear_speed: " << linear_speed << endl;
         cout << "angular_speed: " << angular_speed << endl;
         setupVelocity = true;
       }
 
       else {
-        cout << "\nLa velocita deve essere un numero maggiore zero: " << endl;
+        cout << "\nThe velocity must be a number greater than zero: " << endl;
       }
     }
   
